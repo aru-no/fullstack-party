@@ -1,0 +1,9 @@
+<?php
+
+$config = [
+    'github_authorization' => [
+        'clientId'          => '',
+        'clientSecret'      => '',
+    ],
+    'issue_list_page_size' => 4,
+];
