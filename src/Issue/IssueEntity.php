@@ -13,39 +13,16 @@ use stdClass;
 class IssueEntity extends GitHubIssue implements \JsonSerializable
 {
     /**
-     * @var router
-     */
-    private $router;
-
-    /**
-     * @var Request
-     */
-    private $request;
-
-    /**
      * @var string
      */
     private $repository;
 
     /**
-     * IssueEntity constructor.
-     * @param stdClass $json
+     * @param GitHubIssue $gitHubIssue
      * @param Router $router
      * @param Request $request
-     * @throws \GitHubClientException
      */
-    public function __construct(stdClass $json, Router $router, Request $request)
-    {
-        parent::__construct($json);
-
-        $this->router = $router;
-        $this->request = $request;
-    }
-
-    /**
-     * @param GitHubIssue $gitHubIssue
-     */
-    public function loadFromGitHubIssue(GitHubIssue $gitHubIssue)
+    public function loadFromGitHubIssue(GitHubIssue $gitHubIssue, Router $router, Request $request)
     {
         $objValues = get_object_vars($gitHubIssue);
         foreach($objValues AS $key => $value)
@@ -57,8 +34,8 @@ class IssueEntity extends GitHubIssue implements \JsonSerializable
         $this->repository = explode('/', parse_url($this->getUrl())['path'])[3];
 
         $this->url =
-            $this->request->getUri()->getBaseUrl()
-            . $this->router->pathFor('issue', [
+            $request->getUri()->getBaseUrl()
+            . $router->pathFor('issue', [
                 'user' => $this->getUser()->getLogin(),
                 'repo' => $this->getRepository(),
                 'number' => $this->getNumber()

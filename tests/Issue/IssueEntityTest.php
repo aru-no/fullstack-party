@@ -25,7 +25,7 @@ class IssueEntityTest extends TestCase
     public function testCanBeCreated()
     {
         $gitHubIssue = new \GitHubIssue(json_decode(implode("\n",[
-            file_get_contents(dirname(__FILE__ ). '/assets/github_issue.json')
+            file_get_contents(dirname(__FILE__ ). '/assets/github_issue1.json')
         ])));
 
         $request = $this->app->getContainer()->get('request');

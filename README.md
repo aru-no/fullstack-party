@@ -8,13 +8,15 @@ To get full list issues have to be fetched for each user repository. For the sak
 
 ## RUNNING
 
-Copy `config/config.php.dist` to `config/config.php`
-Register app on Github: 'Settings' -> 'Developer Settings' -> 'OAuth Apps' 
-Add obtained GitHub Client Id and Client secret to `config\config.php`
+* Copy `config/config.php.dist` to `config/config.php`
+* Register app on Github: 'Settings' -> 'Developer Settings' -> 'OAuth Apps' 
+* Add obtained GitHub Client Id and Client secret to `config\config.php`
 
 ## USAGE
 
 ### Authorisation
+
+Authorisation is saved in PHP session, before using API you must hit auth url:
 
 `GET /auth`
 

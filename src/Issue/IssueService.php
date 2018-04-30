@@ -55,7 +55,7 @@ class IssueService
      */
     public function getIssue(string $user, string $repository, int $number): \GitHubIssue
     {
-        /** @var \GitHubIssue $gitHubIssue*/
+        /** @var \GitHubIssue $gitHubIssue */
         $gitHubIssue = $this->client->issues->getIssue($user, $repository, $number);
         /** @var IssueEntity $issueEntity */
         $issueEntity = IssueEntityFactory::createFromGitHubIssue(

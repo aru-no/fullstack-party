@@ -21,8 +21,8 @@ class IssueEntityFactory
         Request $request
     ): IssueEntity
     {
-        $issueEntity = new IssueEntity(new stdClass(), $router, $request);
-        $issueEntity->loadFromGitHubIssue($gitHubIssue);
+        $issueEntity = new IssueEntity(new stdClass());
+        $issueEntity->loadFromGitHubIssue($gitHubIssue, $router, $request);
 
         return $issueEntity;
     }

@@ -18,7 +18,7 @@ class IssueServiceTest extends TestCase
         $config = [];
         $configFile = dirname(__FILE__) . '/../../config/config.php';
         if (is_readable($configFile)) {
-            require_once($configFile);
+            require($configFile);
         } else {
             exit('Config not found');
         }
@@ -40,7 +40,7 @@ class IssueServiceTest extends TestCase
         \Auth\AuthService::setToken('token');
 
         $gitHubIssue = new \GitHubIssue(json_decode(implode("\n",[
-            file_get_contents(dirname(__FILE__ ). '/assets/github_issue.json')
+            file_get_contents(dirname(__FILE__ ). '/assets/github_issue1.json')
         ])));
 
         /** @var GitHubIssues $gitHubIssues */
@@ -88,38 +88,107 @@ class IssueServiceTest extends TestCase
 
         \Auth\AuthService::setToken('token');
 
-        $gitHubIssue = new \GitHubIssue(json_decode(implode("\n",[
-            file_get_contents(dirname(__FILE__ ). '/assets/github_issue.json')
+        $gitHubReposCollection = [];
+        $gitHubReposCollection[] = new GitHubSimpleRepo(json_decode(implode("\n",[
+            file_get_contents(dirname(__FILE__ ). '/assets/github_repo2.json')
+        ])));
+        $gitHubReposCollection[] = new GitHubSimpleRepo(json_decode(implode("\n",[
+            file_get_contents(dirname(__FILE__ ). '/assets/github_repo1.json')
+        ])));
+
+        /** @var GitHubRepos $gitHubRepos */
+        $gitHubRepos = $this->getMockBuilder(\GitHubRepos::class)
+            ->setConstructorArgs([new \GitHubClient])
+            ->setMethods(['listYourRepositories'])
+            ->getMock();
+        $gitHubRepos->expects($this->once())
+            ->method('listYourRepositories')
+            ->with(
+                $this->equalTo('all'),
+                $this->equalTo('updated'),
+                $this->equalTo('desc')
+            )
+            ->willReturn($gitHubReposCollection);
+
+        $gitHubIssueCollection1 = [];
+        $gitHubIssueCollection1[] = new \GitHubIssue(json_decode(implode("\n",[
+            file_get_contents(dirname(__FILE__ ). '/assets/github_issue3.json')
+        ])));
+
+        $gitHubIssueCollection2 = [];
+        $gitHubIssueCollection2[] = new \GitHubIssue(json_decode(implode("\n",[
+            file_get_contents(dirname(__FILE__ ). '/assets/github_issue2.json')
+        ])));
+        $gitHubIssueCollection2[] = new \GitHubIssue(json_decode(implode("\n",[
+            file_get_contents(dirname(__FILE__ ). '/assets/github_issue1.json')
         ])));
 
         /** @var GitHubIssues $gitHubIssues */
         $gitHubIssues = $this->getMockBuilder(\GitHubIssues::class)
             ->setConstructorArgs([new \GitHubClient])
-            ->setMethods(['getIssue'])
+            ->setMethods(['listIssues'])
             ->getMock();
-        $gitHubIssues->expects($this->once())
-            ->method('getIssue')
-            ->with(
-                $this->equalTo('aru-no'),
-                $this->equalTo('test1'),
-                $this->equalTo(1)
-            )
-            ->willReturn($gitHubIssue);
+
+        $gitHubIssues->expects($this->any())
+            ->method('listIssues')
+            ->will($this->returnCallback(
+                function (
+                    $owner,
+                    $repo,
+                    $milestone = null,
+                    $state = null,
+                    $assignee = null,
+                    $creator = null,
+                    $mentioned = null,
+                    $labels = null,
+                    $sort = null,
+                    $direction = null,
+                    $since = null
+                ) use ($gitHubIssueCollection1, $gitHubIssueCollection2) {
+                    switch ($repo) {
+                        case 'test1':
+                            return $gitHubIssueCollection2;
+                            break;
+                        case 'test2':
+                            return $gitHubIssueCollection1;
+                            break;
+                        default:
+                            return false;
+                            break;
+                    }
+                }
+            ));
 
         $gitHubClient = new \GitHubClient();
         $gitHubClient->setAuthType(\GitHubClientBase::GITHUB_AUTH_TYPE_OAUTH_BASIC);
         $gitHubClient->setOauthKey('token');
+        $gitHubClient->repos = $gitHubRepos;
         $gitHubClient->issues = $gitHubIssues;
 
         $issueService = new \Issue\IssueService($this->app->getContainer(), $gitHubClient);
 
-        $this->assertEquals(
-            $issueService->getIssue('aru-no', 'test1', 1),
-            \Issue\IssueEntityFactory::createFromGitHubIssue(
+        $issueCollection = [];
+        /** @var GitHubIssue $gitHubIssue */
+        foreach (array_merge($gitHubIssueCollection1, $gitHubIssueCollection2) as $gitHubIssue) {
+            $issueCollection[] = \Issue\IssueEntityFactory::createFromGitHubIssue(
                 $gitHubIssue,
                 $this->app->getContainer()->get('router'),
                 $this->app->getContainer()->get('request')
-            )
+            );
+        }
+
+        $expectedResult =  [
+            'totals' => [
+                'total' => 3,
+                'open' => 3,
+                'closed' => 0,
+            ],
+            'list' => $issueCollection,
+        ];
+
+        $this->assertEquals(
+            $issueService->getAllIssueCollection(1, 3),
+            $expectedResult
         );
     }
 }
